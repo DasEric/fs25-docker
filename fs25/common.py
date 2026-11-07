@@ -20,13 +20,16 @@ SECRETS = ROOT / ".fs25-secrets"
 MARKER = GAME / ".fs25-install.json"
 DEFAULT_PROTON = "GE-Proton11-12"
 RELEASE = re.compile(r"GE-Proton([0-9]+)-([0-9]+)\Z")
+PANEL_PRIVATE = frozenset({
+    "FS25_PRODUCT_KEY", "FS25_DOWNLOAD_URL", "FS25_DLC_PRODUCT_KEYS", "FS25_DLC_INSTALL_SOURCES",
+})
 
 
 class Failure(Exception):
     pass
 
 
-def secret(name, *, trim=True):
+def secret(name, *, trim=True, multiline=False):
     try:
         with os.fdopen(os.open(SECRETS / name, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK),
                        encoding="utf-8") as handle:
@@ -39,9 +42,22 @@ def secret(name, *, trim=True):
     if len(value) > 8192:
         raise Failure(f".fs25-secrets/{name} is too large.")
     value = value.strip() if trim else value.rstrip("\r\n")
-    if any(ord(char) < 32 for char in value):
-        raise Failure(f".fs25-secrets/{name} must contain one line of text.")
+    if any(ord(char) < 32 and not (multiline and char in "\n\r\t") for char in value):
+        raise Failure(f".fs25-secrets/{name} contains an invalid control character.")
     return value
+
+
+def panel_setting(variable, filename, *, multiline=False):
+    value = os.environ.get(variable, "").strip()
+    if not value:
+        return secret(filename, multiline=True) if multiline else secret(filename)
+    if len(value) > 8192 or any(ord(char) < 32 and not (multiline and char in "\n\r\t") for char in value):
+        raise Failure(f"{variable} contains invalid characters or is too long.")
+    return value
+
+
+def product_key():
+    return panel_setting("FS25_PRODUCT_KEY", "activation-key").replace(" ", "")
 
 
 def version(value):
@@ -64,7 +80,8 @@ def proton_env(tag):
     protonfixes = ROOT / ".config" / "protonfixes"
     for directory in (prefix, steam, protonfixes):
         directory.mkdir(parents=True, exist_ok=True)
-    return dict(os.environ, HOME=str(ROOT), XDG_CONFIG_HOME=str(protonfixes.parent),
+    env = {name: value for name, value in os.environ.items() if name not in PANEL_PRIVATE}
+    return dict(env, HOME=str(ROOT), XDG_CONFIG_HOME=str(protonfixes.parent),
                 XDG_CACHE_HOME=str(ROOT / ".cache"), XDG_DATA_HOME=str(ROOT / ".local" / "share"),
                 USER=os.environ.get("USER") or "container",
                 STEAM_COMPAT_DATA_PATH=str(prefix), STEAM_COMPAT_CLIENT_INSTALL_PATH=str(steam),
@@ -100,12 +117,12 @@ def stop_wine(tag, env):
 
 
 @contextmanager
-def xvfb():
+def xvfb(screen="1024x768x24"):
     read_fd, write_fd = os.pipe()
     process = None
     try:
         process = subprocess.Popen(["Xvfb", "-displayfd", str(write_fd), "-screen", "0",
-                                    "1024x768x24", "-nolisten", "tcp"],
+                                    screen, "-nolisten", "tcp"],
                                    pass_fds=(write_fd,), start_new_session=True,
                                    stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
                                    stderr=subprocess.DEVNULL)

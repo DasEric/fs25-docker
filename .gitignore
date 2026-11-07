@@ -2,6 +2,7 @@ UMSTELLUNGSPLAN.md
 VERIFICATION.txt
 __pycache__/
 .fs25-secrets/
+dlc-installers/
 .proton/
 .steam/
 game/

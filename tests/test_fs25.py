@@ -71,8 +71,8 @@ class InstallerTests(unittest.TestCase):
             (unpacked / "Setup.exe").write_text("installer")
             with (patch.multiple(install, GAME=game, MARKER=marker, WORK=root / "work", SECRETS=root / ".secrets"),
                   patch.object(install, "drop_volume_root"),
-                  patch.object(install, "secret", side_effect=lambda name: (
-                      "https://cdn16.giants-software.com/new.img" if name == "download-url" else "")),
+                  patch.object(install, "product_key", return_value=""),
+                  patch.object(install, "panel_setting", return_value="https://cdn16.giants-software.com/new.img"),
                   patch.object(install, "unpack", return_value=unpacked),
                   patch.object(install, "ensure_proton"),
                   patch.object(install, "run_setup", side_effect=common.Failure("fixture failure"))):
@@ -130,6 +130,11 @@ class ConfigTests(unittest.TestCase):
         self.assertEqual(variables["FS25_PROTON_VERSION"], common.DEFAULT_PROTON)
         self.assertEqual((variables["FS25_WEB_PORT"], variables["FS25_TLS_PORT"]), ("8080", "8443"))
         self.assertFalse(any("PASSWORD" in variable or "ACTIVATION" in variable for variable in variables))
+        private = {item["env_variable"]: item for item in egg["variables"] if not item["user_viewable"]}
+        self.assertTrue(common.PANEL_PRIVATE <= private.keys())
+        for variable in common.PANEL_PRIVATE:
+            self.assertEqual(private[variable]["default_value"], "")
+            self.assertFalse(private[variable]["user_editable"])
 
 
 class StartupTests(unittest.TestCase):

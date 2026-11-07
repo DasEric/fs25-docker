@@ -17,7 +17,7 @@ from urllib.parse import unquote, urlencode, urlsplit
 from urllib.request import HTTPRedirectHandler, Request, build_opener
 
 from common import (DEFAULT_PROTON, GAME, MARKER, RELEASE, ROOT, SECRETS, WORK,
-                    Failure, atomic_file, proton, proton_env, run_proton, secret, stop_wine,
+                    Failure, atomic_file, panel_setting, product_key, proton, proton_env, run_proton, stop_wine,
                     terminate, valid_game, version, xvfb)
 
 
@@ -50,10 +50,10 @@ class TrustedRedirect(HTTPRedirectHandler):
         return super().redirect_request(req, fp, code, msg, headers, newurl)
 
 
-def remote(url, hosts, *, data=None, referer=None):
+def remote(url, hosts, *, data=None, referer=None, headers=None):
     if not allowed(url, hosts):
         raise Failure("The download URL is not on an allowed HTTPS host.")
-    headers = {"User-Agent": UA}
+    headers = {"User-Agent": UA, **(headers or {})}
     if referer:
         headers["Referer"] = referer
     return build_opener(TrustedRedirect(hosts)).open(Request(url, data, headers), timeout=60)
@@ -289,15 +289,15 @@ def install(*, require_game=False):
                 shutil.rmtree(GAME)
             previous.rename(GAME)
     old = installed()
-    key = secret("activation-key").replace(" ", "")
-    override = secret("download-url")
+    key = product_key()
+    override = panel_setting("FS25_DOWNLOAD_URL", "download-url")
     if not key and not override:
         if old:
             print("No product key or override available; leaving the installed game unchanged.")
         elif require_game:
-            raise Failure("Add your GIANTS product key to .fs25-secrets/activation-key, then start the server again.")
+            raise Failure("Set GIANTS Product Key in the server's Admin Startup settings, then start again.")
         else:
-            print("Volume initialized. Add .fs25-secrets/activation-key, then start the server.")
+            print("Volume initialized. Set GIANTS Product Key, then start the server.")
         return
     tag = version(os.environ.get("FS25_PROTON_VERSION", "").strip() or DEFAULT_PROTON)
     url = override or lookup(key)

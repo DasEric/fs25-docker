@@ -1,7 +1,7 @@
 FROM docker.io/cubecoders/ampbase:debian@sha256:f02eb4e2cdd242b61f9e0b8c99c004842796e8c6fd7eaae6e92701c621d4f40b
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends xdotool libgl1 libvulkan1 mesa-vulkan-drivers \
+    && apt-get install -y --no-install-recommends xdotool p7zip-full libgl1 libvulkan1 mesa-vulkan-drivers \
     && rm -rf /var/lib/apt/lists/* \
     && useradd --create-home --user-group --uid 1000 --home-dir /home/container container \
     && mkdir -p /mnt && ln -s /home/container /mnt/server

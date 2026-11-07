@@ -33,6 +33,56 @@
   },
   "variables": [
     {
+      "name": "GIANTS Product Key",
+      "description": "Admin only. FS25 product key for the GIANTS download and first activation. Blank uses .fs25-secrets/activation-key if present. Wings may log egg variables during installation.",
+      "env_variable": "FS25_PRODUCT_KEY",
+      "default_value": "",
+      "user_viewable": false,
+      "user_editable": false,
+      "rules": "nullable|string|max:80",
+      "field_type": "text"
+    },
+    {
+      "name": "GIANTS IMG Download Link",
+      "description": "Optional direct HTTPS .img link from the GIANTS CDN. Blank looks up the base game with the product key.",
+      "env_variable": "FS25_DOWNLOAD_URL",
+      "default_value": "",
+      "user_viewable": false,
+      "user_editable": false,
+      "rules": "nullable|string|max:2048",
+      "field_type": "text"
+    },
+    {
+      "name": "DLC Product Keys",
+      "description": "Optional admin-only list: pumps=KEY;mercedes=KEY. Use matching names in DLC Installation Sources. Blank leaves DLC installation disabled unless a key file is present.",
+      "env_variable": "FS25_DLC_PRODUCT_KEYS",
+      "default_value": "",
+      "user_viewable": false,
+      "user_editable": false,
+      "rules": "nullable|string|max:4096",
+      "field_type": "text"
+    },
+    {
+      "name": "DLC Installation Sources",
+      "description": "Optional matching list: pumps=https://.../installer.exe;mercedes=installer.img. Local paths are relative to dlc-installers/. With no override, the DLC key is looked up at GIANTS.",
+      "env_variable": "FS25_DLC_INSTALL_SOURCES",
+      "default_value": "",
+      "user_viewable": false,
+      "user_editable": false,
+      "rules": "nullable|string|max:8192",
+      "field_type": "text"
+    },
+    {
+      "name": "DLC Installer Timeout",
+      "description": "Maximum seconds per DLC installer, including online activation. The base game starts only after all configured DLC installers succeed.",
+      "env_variable": "FS25_DLC_INSTALLER_TIMEOUT",
+      "default_value": "1800",
+      "user_viewable": true,
+      "user_editable": false,
+      "rules": "required|integer|between:60,7200",
+      "field_type": "text"
+    },
+    {
       "name": "Web Interface Port",
       "description": "TCP allocation for the GIANTS web interface.",
       "env_variable": "FS25_WEB_PORT",

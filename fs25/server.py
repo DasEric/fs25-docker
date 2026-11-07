@@ -1,6 +1,6 @@
 """Wings entry point for the AMP-derived Farming Simulator 25 server."""
 
-from contextlib import suppress
+from contextlib import contextmanager, suppress
 import ipaddress
 import os
 import re
@@ -13,8 +13,9 @@ import threading
 import time
 from xml.etree import ElementTree as ET
 
-from common import (GAME, PROFILE, ROOT, Failure, atomic_file, compat, proton, proton_env,
+from common import (GAME, PROFILE, ROOT, Failure, atomic_file, compat, product_key, proton, proton_env,
                     run_proton, secret, stop_wine, terminate, xvfb)
+from dlc import activate_configured, prepare_for_reinstall
 from install import drop_volume_root, install, installed
 from web import Forms, Web, start_payload
 
@@ -182,9 +183,9 @@ def activate(tag, env):
     if activation.is_file() and activation.stat().st_size:
         print("FS25 activation data is already present.")
         return
-    key = secret("activation-key").replace(" ", "")
+    key = product_key()
     if not key:
-        raise Failure("Add your GIANTS product key to .fs25-secrets/activation-key before starting.")
+        raise Failure("Set GIANTS Product Key in the server's Admin Startup settings before starting.")
     print("Opening the official GIANTS activation dialog.")
     with xvfb() as display:
         gui = dict(env, DISPLAY=display)
@@ -336,18 +337,26 @@ def follow_logs(directory, process):
         STOP.wait(1)
 
 
-def run_install(*, require_game=False):
+@contextmanager
+def interruptible_install(exit_code):
     # An install may be doing a long download or waiting for Setup.exe. Interrupt it
     # immediately so installer cleanup and rollback run before Wings forces a stop.
     def cancel(*_):
-        sys.exit(0 if require_game else 143)
+        sys.exit(exit_code)
 
     handlers = {sig: signal.signal(sig, cancel) for sig in (signal.SIGTERM, signal.SIGINT)}
     try:
-        install(require_game=require_game)
+        yield
     finally:
         for sig, handler in handlers.items():
             signal.signal(sig, handler)
+
+
+def run_install(*, require_game=False):
+    with interruptible_install(0 if require_game else 143):
+        install(require_game=require_game)
+        if not require_game and installed():
+            prepare_for_reinstall()
 
 
 def ensure_installed():
@@ -388,6 +397,8 @@ def start():
     activate(tag, env)
     if STOP.is_set():
         return 0
+    with interruptible_install(0):
+        activate_configured(tag, env)
     candidates = endpoints(web_port, tls_port, tls_on)
     process = run_proton(tag, GAME / "dedicatedServer.exe", env=env, cwd=GAME)
     client = None
