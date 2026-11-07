@@ -69,7 +69,7 @@ class InstallerTests(unittest.TestCase):
             unpacked.mkdir()
             (unpacked / "Setup.exe").write_text("installer")
             with (patch.multiple(install, GAME=game, MARKER=marker, WORK=root / "work", SECRETS=root / ".secrets"),
-                  patch.object(install, "drop_installer_root"),
+                  patch.object(install, "drop_volume_root"),
                   patch.object(install, "secret", side_effect=lambda name: (
                       "https://cdn16.giants-software.com/new.img" if name == "download-url" else "")),
                   patch.object(install, "unpack", return_value=unpacked),
@@ -112,12 +112,39 @@ class ConfigTests(unittest.TestCase):
         self.assertEqual(egg["scripts"]["installation"]["script"],
                          "exec /usr/bin/python3 /opt/fs25/server.py install\n")
         runtime = next(iter(egg["docker_images"].values()))
-        self.assertEqual(egg["scripts"]["installation"]["container"], runtime.removesuffix(":latest") + ":installer")
+        installer = egg["scripts"]["installation"]["container"]
+        workflow = (root / ".github" / "workflows" / "docker.yml").read_text(encoding="utf-8")
+        self.assertEqual(runtime, "ghcr.io/daseric/fs25-docker:latest")
+        self.assertEqual(installer, runtime)
+        self.assertIn("IMAGE: " + runtime.removesuffix(":latest"), workflow)
+        self.assertNotIn("--target", workflow)
+        self.assertNotIn("$IMAGE:installer", workflow)
         variables = {item["env_variable"]: item["default_value"] for item in egg["variables"]}
         self.assertEqual(len(variables), len(egg["variables"]))
         self.assertEqual(variables["FS25_PROTON_VERSION"], common.DEFAULT_PROTON)
         self.assertEqual((variables["FS25_WEB_PORT"], variables["FS25_TLS_PORT"]), ("8080", "8443"))
         self.assertFalse(any("PASSWORD" in variable or "ACTIVATION" in variable for variable in variables))
+
+
+class StartupTests(unittest.TestCase):
+    def test_first_start_installs_and_restart_reuses_completed_installation(self):
+        complete = {"source": "FarmingSimulator25.img", "proton": common.DEFAULT_PROTON}
+        with (patch.object(server, "installed", side_effect=[None, complete, complete]),
+              patch.object(server, "run_install") as setup,
+              contextlib.redirect_stdout(io.StringIO()) as log):
+            self.assertEqual(server.ensure_installed(), complete)
+            self.assertEqual(server.ensure_installed(), complete)
+            setup.assert_called_once_with(require_game=True)
+        self.assertIn("Preparing it before starting.", log.getvalue())
+        self.assertIn("Skipping setup.", log.getvalue())
+
+    def test_incomplete_setup_does_not_proceed_to_runtime(self):
+        with (patch.object(server, "installed", return_value=None),
+              patch.object(server, "run_install") as setup,
+              contextlib.redirect_stdout(io.StringIO())):
+            with self.assertRaisesRegex(common.Failure, "installation did not complete"):
+                server.ensure_installed()
+            setup.assert_called_once_with(require_game=True)
 
 
 LOGIN = '<form method="post"><input name="username"><input name="password"><button name="login">Login</button></form>'

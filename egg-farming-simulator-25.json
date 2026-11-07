@@ -1,5 +1,5 @@
 {
-  "_comment": "Set both GHCR image references for your repository, or use the egg from GitHub Actions.",
+  "_comment": "Farming Simulator 25 egg for https://github.com/DasEric/fs25-docker.",
   "meta": {
     "version": "PTDL_v2",
     "update_url": null
@@ -9,7 +9,7 @@
   "description": "GIANTS DVD/download dedicated server for Linux amd64 using the FS25 install and startup sequence from the CubeCoders AMP template. Requires a separate GIANTS server product key.",
   "features": [],
   "docker_images": {
-    "FS25 (Linux amd64)": "ghcr.io/your-org/your-repo:latest"
+    "FS25 (Linux amd64)": "ghcr.io/daseric/fs25-docker:latest"
   },
   "file_denylist": [
     "/.fs25-secrets",
@@ -27,7 +27,7 @@
   "scripts": {
     "installation": {
       "script": "exec /usr/bin/python3 /opt/fs25/server.py install\n",
-      "container": "ghcr.io/your-org/your-repo:installer",
+      "container": "ghcr.io/daseric/fs25-docker:latest",
       "entrypoint": "/bin/sh"
     }
   },

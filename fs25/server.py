@@ -15,7 +15,7 @@ from xml.etree import ElementTree as ET
 
 from common import (GAME, PROFILE, ROOT, Failure, atomic_file, compat, proton, proton_env,
                     run_proton, secret, stop_wine, terminate, xvfb)
-from install import install, installed
+from install import drop_volume_root, install, installed
 from web import Forms, Web, start_payload
 
 
@@ -336,12 +336,36 @@ def follow_logs(directory, process):
         STOP.wait(1)
 
 
-def start():
-    if os.geteuid() == 0:
-        raise Failure("Run the FS25 runtime as the non-root Wings server UID.")
+def run_install(*, require_game=False):
+    # An install may be doing a long download or waiting for Setup.exe. Interrupt it
+    # immediately so installer cleanup and rollback run before Wings forces a stop.
+    def cancel(*_):
+        sys.exit(0 if require_game else 143)
+
+    handlers = {sig: signal.signal(sig, cancel) for sig in (signal.SIGTERM, signal.SIGINT)}
+    try:
+        install(require_game=require_game)
+    finally:
+        for sig, handler in handlers.items():
+            signal.signal(sig, handler)
+
+
+def ensure_installed():
     state = installed()
     if not state:
-        raise Failure("FS25 is not installed. Supply the GIANTS product key and run Reinstall.")
+        print("No complete FS25 installation found. Preparing it before starting.")
+        run_install(require_game=True)
+        state = installed()
+        if not state:
+            raise Failure("FS25 installation did not complete; the dedicated server was not started.")
+    else:
+        print("Existing FS25 installation found. Skipping setup.")
+    return state
+
+
+def start():
+    drop_volume_root()
+    state = ensure_installed()
     tag = state["proton"]
     if not proton(tag).is_file() or not os.access(proton(tag), os.X_OK):
         raise Failure("The installed GE-Proton release is missing. Run Reinstall.")
@@ -404,8 +428,7 @@ def main():
     os.umask(0o077)
     try:
         if sys.argv[1] == "install":
-            signal.signal(signal.SIGTERM, lambda *_: sys.exit(143))
-            install()
+            run_install()
             return 0
         for sig in (signal.SIGTERM, signal.SIGINT):
             signal.signal(sig, lambda *_: STOP.set())

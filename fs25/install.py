@@ -264,19 +264,19 @@ def run_setup(setup, tag):
         raise Failure(f"FS25 setup failed (exit {result}); see work/fs25_install.log and work/fs25_proton.log.")
 
 
-def drop_installer_root():
+def drop_volume_root():
     if os.geteuid() != 0:
         return
     owner = ROOT.stat()
     if owner.st_uid == 0:
-        raise Failure("The installer volume must belong to the non-root Wings server UID/GID.")
+        raise Failure("The data volume must belong to the non-root Wings server UID/GID.")
     os.setgroups([])
     os.setgid(owner.st_gid)
     os.setuid(owner.st_uid)
 
 
-def install():
-    drop_installer_root()
+def install(*, require_game=False):
+    drop_volume_root()
     os.umask(0o077)
     SECRETS.mkdir(mode=0o700, exist_ok=True)
     WORK.mkdir(exist_ok=True)
@@ -294,8 +294,10 @@ def install():
     if not key and not override:
         if old:
             print("No product key or override available; leaving the installed game unchanged.")
+        elif require_game:
+            raise Failure("Add your GIANTS product key to .fs25-secrets/activation-key, then start the server again.")
         else:
-            print("Volume initialized. Add .fs25-secrets/activation-key and run Reinstall.")
+            print("Volume initialized. Add .fs25-secrets/activation-key, then start the server.")
         return
     tag = version(os.environ.get("FS25_PROTON_VERSION", "").strip() or DEFAULT_PROTON)
     url = override or lookup(key)
