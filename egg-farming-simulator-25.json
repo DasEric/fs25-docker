@@ -6,7 +6,7 @@
   },
   "name": "Farming Simulator 25",
   "author": "noreply@github.com",
-  "description": "GIANTS DVD/download dedicated server for Linux amd64 using the FS25 install and startup sequence from the CubeCoders AMP template. Requires a separate GIANTS server product key.",
+  "description": "Farming Simulator 25 dedicated server for Linux amd64 using the official GIANTS installer and GE-Proton. Requires a separate GIANTS server product key.",
   "features": [],
   "docker_images": {
     "FS25 Linux amd64": "ghcr.io/daseric/fs25-docker:latest"

@@ -249,7 +249,7 @@ def run_setup(setup, tag):
     env = proton_env(tag)
     log = WORK / "fs25_install.log"
     console = WORK / "fs25_proton.log"
-    print("Installing FS25 through GE-Proton.")
+    print("Installing FS25 through GE-Proton. ( This can take a long while, ITS NOT STUCK JUST WAIT )")
     with xvfb() as display, console.open("wb") as out:
         env["DISPLAY"] = display
         process = run_proton(tag, setup, "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART",

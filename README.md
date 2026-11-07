@@ -1,6 +1,6 @@
 # Farming Simulator 25 für Pterodactyl
 
-Eigenes Linux/amd64-Image und Pterodactyl-Egg nach der FS25-Vorlage von [CubeCoders AMP](https://github.com/CubeCoders/AMPTemplates). Die Installation verwendet den offiziellen GIANTS-Download und GE-Proton, nicht SteamCMD. Du brauchst einen eigenen GIANTS-Produktschlüssel für den Server und etwa **70 GiB freien Speicher** für die Erstinstallation. Das Disklimit im Panel muss dafür ausreichen.
+Eigenes Linux/amd64-Docker-Image und Pterodactyl-Egg für Farming Simulator 25. Die Installation verwendet den offiziellen GIANTS-Download und GE-Proton, nicht SteamCMD. Du brauchst einen eigenen GIANTS-Produktschlüssel für den Server und etwa **70 GiB freien Speicher** für die Erstinstallation. Das Disklimit im Panel muss dafür ausreichen.
 
 ## Installation
 
