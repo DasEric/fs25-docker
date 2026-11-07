@@ -1,0 +1,11 @@
+UMSTELLUNGSPLAN.md
+VERIFICATION.txt
+__pycache__/
+.fs25-secrets/
+.proton/
+.steam/
+game/
+profile/
+work/
+*.img
+*.pem
