@@ -3,6 +3,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import io
 import json
 from pathlib import Path
+import re
 import tempfile
 import threading
 import unittest
@@ -111,7 +112,12 @@ class ConfigTests(unittest.TestCase):
         self.assertEqual(egg["config"]["stop"], "^SIGTERM")
         self.assertEqual(egg["scripts"]["installation"]["script"],
                          "exec /usr/bin/python3 /opt/fs25/server.py install\n")
-        runtime = next(iter(egg["docker_images"].values()))
+        self.assertEqual(len(egg["docker_images"]), 1)
+        label, runtime = next(iter(egg["docker_images"].items()))
+        # The Panel combines the label and reference as "label|image" when saving.
+        panel_image_pattern = re.compile(r"[\w#./\- ]*\|?~?[\w./\-:@ ]*", re.ASCII)
+        self.assertIsNone(panel_image_pattern.fullmatch(f"FS25 (Linux amd64)|{runtime}"))
+        self.assertIsNotNone(panel_image_pattern.fullmatch(f"{label}|{runtime}"))
         installer = egg["scripts"]["installation"]["container"]
         workflow = (root / ".github" / "workflows" / "docker.yml").read_text(encoding="utf-8")
         self.assertEqual(runtime, "ghcr.io/daseric/fs25-docker:latest")

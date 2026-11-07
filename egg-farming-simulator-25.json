@@ -9,7 +9,7 @@
   "description": "GIANTS DVD/download dedicated server for Linux amd64 using the FS25 install and startup sequence from the CubeCoders AMP template. Requires a separate GIANTS server product key.",
   "features": [],
   "docker_images": {
-    "FS25 (Linux amd64)": "ghcr.io/daseric/fs25-docker:latest"
+    "FS25 Linux amd64": "ghcr.io/daseric/fs25-docker:latest"
   },
   "file_denylist": [
     "/.fs25-secrets",
