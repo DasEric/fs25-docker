@@ -7,6 +7,7 @@ RUN apt-get update \
     && mkdir -p /mnt && ln -s /home/container /mnt/server
 
 COPY fs25/ /opt/fs25/
+COPY LICENSE /usr/share/doc/fs25/LICENSE
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 USER=container HOME=/home/container
 WORKDIR /home/container
 # Wings overrides the runtime UID. The installer drops root to the data volume owner.
